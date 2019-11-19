@@ -1,0 +1,78 @@
+#!/bin/bash
+
+if [ -z "$PSPAWN_PRIVILEGED" ]; then
+    PSPAWN_PRIVILEGED=n
+fi
+
+if [ -z "$PSPAWN_LXC_NAME" ]; then
+    PSPAWN_LXC_NAME="pspawn-lxc"
+fi
+
+if [ -z "$PSPAWN_DIR" ]; then
+    PSPAWN_DIR=$(dirname `realpath $0`)
+fi
+
+set -e
+
+if test -z "$working_dir"; then
+    working_dir=${PSPAWN_DIR}
+fi
+
+fail() {
+    echo "$@" >&2
+    exit 1
+}
+
+# we don't want anyone snooping around our activities, so we avoid logging sudo commands
+subash() {
+    wd=${PSPAWN_DIR}
+    cd "$HOME"
+    echo "set -e ; cd $wd ;" "$@ < `tty`" | sudo /bin/bash
+    cd "$wd"
+}
+
+lxccmd() {
+    cmd=$1
+    shift
+    if test "$PSPAWN_PRIVILEGED" = "y"; then
+        subash lxc-"$cmd" -P "${PSPAWN_DIR}" "$@"
+    else
+        lxc-"$cmd" -P "${PSPAWN_DIR}" "$@"
+    fi
+    return $?
+}
+
+PSPAWN_LXC_START_ARGS="-s lxc.rootfs.path=${PSPAWN_DIR}/$PSPAWN_LXC_NAME/rootfs $PSPAWN_LXC_START_ARGS_EXTRA"
+
+test -z "$1" && fail command required
+
+cmd=$1
+shift
+
+case "$cmd" in
+    create)
+        lxccmd create \
+            -B dir \
+            -n $PSPAWN_LXC_NAME \
+            -t download \
+            -- -d ubuntu -r bionic -a amd64
+        ;;
+    start)
+        lxccmd start \
+            -n $PSPAWN_LXC_NAME \
+            $PSPAWN_LXC_START_ARGS \
+            "$@"
+        ;;
+    ls)
+        lxccmd ls "$@"
+        ;;
+    exec)
+        lxccmd attach -n $PSPAWN_LXC_NAME "$@" || \
+        lxccmd execute -n $PSPAWN_LXC_NAME "$@"
+        ;;
+    *)
+        lxccmd $cmd -n $PSPAWN_LXC_NAME "$@"
+        ;;
+esac
+
+exit $?

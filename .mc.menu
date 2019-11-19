@@ -1,0 +1,23 @@
+q       Run Midnight Commander in Container
+	x-terminal-emulator -e './pspawn execute -- env TERM=xterm mc' < /dev/null &> /dev/null &
+
+s       Start Container
+	./pspawn start
+
+d       Stop Container
+	./pspawn stop
+
+        Create Container
+	./pspawn create
+
+        Destroy Container
+	./pspawn destroy -f
+
+z       Start Bash in Running Container
+	./pspawn attach
+
+a       Start Midnight Commander in Running Container
+	x-terminal-emulator -e './pspawn attach --keep-var TERM -- mc' < /dev/null &> /dev/null &
+
+        Display Container Info
+	./pspawn info
