@@ -1,21 +1,36 @@
-# PSpawn/XSpawn
+# PSpawn/XSpawn/ESpawn
 
-PSpawn is a simple LXC wrapper that allows me to have a thumb drive with a single LXC container anywhere, where I have a linux machine with LXC 1.0 installed. It uses it's own directory to store LXC container. XSpawn wraps both PSpawn and X.Org Server, which allows me to use my own portable X environment on any linux PC with sudo privileges or Xephyr installed.
+PSpawn is a simple [LXC](https://linuxcontainers.org/) wrapper that allows me to have a thumb drive with a single [LXC](https://linuxcontainers.org/) container anywhere, where I have a linux machine with LXC 1.0 installed. It uses it's own directory to store LXC container. XSpawn wraps both PSpawn and [X.Org Server](https://www.x.org/), which allows me to use my own portable X environment on any linux PC with sudo privileges or Xephyr installed. ESpawn wraps both PSpawn and XSpawn to encrypt LXC container using [eCryptfs](https://ecryptfs.org/).
 
 ## Dependencies
 
-PSpawn depends only on LXC 1.0, while XSpawn also depends on X.Org Server. It was tested only on Ubuntu 18.04.3, but I expect it to work anywhere, where sudo and LXC are available.
+PSpawn depends only on LXC 1.0, while XSpawn also depends on [X.Org Server](https://www.x.org/). ESpawn requires PSpawn, XSpawn and [eCryptfs](https://ecryptfs.org/) to work. It was tested only on Ubuntu 18.04.3, but I expect it to work anywhere, where sudo and LXC are available.
 
 ## Usage
 
 Since it's a LXC wrapper it wraps all `lxc-*` commands. For example `./pspawn start` actually executes `lxc-start -P $PSPAWN_DIR -n pspawn-lxc`.
 
-Use following commands to create your first PSpawn container and start X session:
+Use following commands to install everything into current directory:
 
     $ git clone https://github.com/azazar/pspawn
     $ cd pspawn
+
+Create your first plain PSpawn container:
+
     $ ./pspawn create
+
+And start X session:
+
     $ ./xspawn
+
+Or create encrypted container:
+
+    $ ./espawn create
+    $ ./espawn p create
+
+And start X session:
+
+    $ ./espawn x
 
 ### Examples
 

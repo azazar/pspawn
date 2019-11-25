@@ -12,6 +12,8 @@ if [ -z "$PSPAWN_DIR" ]; then
     PSPAWN_DIR=$(dirname `realpath $0`)
 fi
 
+PSPAWN_LXC_DIR="$PSPAWN_DIR/pspawn_data/lxc"
+
 fail() {
     echo "$@" >&2
     exit 1
@@ -29,14 +31,14 @@ lxccmd() {
     cmd=$1
     shift
     if test "$PSPAWN_PRIVILEGED" = "y"; then
-        subash lxc-"$cmd" -P "${PSPAWN_DIR}" "$@"
+        subash lxc-"$cmd" -P "${PSPAWN_LXC_DIR}" "$@"
     else
-        lxc-"$cmd" -P "${PSPAWN_DIR}" "$@"
+        lxc-"$cmd" -P "${PSPAWN_LXC_DIR}" "$@"
     fi
     return $?
 }
 
-ROOTFS=${PSPAWN_DIR}/$PSPAWN_LXC_NAME/rootfs
+ROOTFS=${PSPAWN_LXC_DIR}/$PSPAWN_LXC_NAME/rootfs
 
 PSPAWN_LXC_START_ARGS="-s lxc.rootfs.path=$ROOTFS"
 
@@ -47,6 +49,7 @@ shift
 
 case "$cmd" in
     create)
+        test -e "$PSPAWN_LXC_DIR" || mkdir -p "$PSPAWN_LXC_DIR"
         lxccmd create \
             -B dir \
             -n $PSPAWN_LXC_NAME \
@@ -62,7 +65,7 @@ case "$cmd" in
             "$@"
         ;;
     conf)
-        echo "$PSPAWN_DIR/$PSPAWN_LXC_NAME/config"
+        echo "$PSPAWN_LXC_DIR/$PSPAWN_LXC_NAME/config"
         ;;
     root)
         echo "$ROOTFS"

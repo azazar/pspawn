@@ -1,0 +1,129 @@
+#!/bin/bash
+
+if [ -z "$PSPAWN_DIR" ]; then
+    PSPAWN_DIR=$(dirname `realpath $0`)
+fi
+
+conf="$PSPAWN_DIR/pspawn.conf"
+
+if [ -e "$conf" ]; then
+    source "$conf"
+fi
+
+DATA_DIR="$PSPAWN_DIR/pspawn_data"
+ENCRYPTED_DIR="$PSPAWN_DIR/pspawn_encrypted_data"
+SIGNATURES_FILE="$PSPAWN_DIR/pspawn_ecryptfs_signatures"
+
+fail() {
+    echo "$@" >&2
+    exit 1
+}
+
+# we don't want anyone snooping around our activities, so we avoid logging sudo commands
+subash() {
+    wd=${PSPAWN_DIR}
+    cd "$HOME"
+    echo "set -e ; cd $wd ;" "$@" "< `tty`" | sudo /bin/bash
+    cd "$wd"
+}
+
+gitinst() {
+    cmd=$1
+    url=$2
+    path="$HOME/.local/bin/$cmd"
+    test -e "$path" && return 0
+    wget "$url" -O "$path" || return 1
+    chmod +x "$path"
+}
+
+set -e
+
+is_mounted() {
+    mountpoint -q "$DATA_DIR" && return 0
+    return 1
+}
+
+check_setup() {
+    test -e "$ENCRYPTED_DIR" || return 1
+    test -e "$SIGNATURES_FILE" || return 1
+}
+
+mount_encrypted_dir() {
+    if is_mounted; then
+        echo Already mounted
+        return 0
+    fi
+
+    check_setup || fail "No encrypted container available"
+
+    data_sig=`sed '1q;d' "${SIGNATURES_FILE}"`
+
+    test -e "$DATA_DIR" || mkdir -p "$DATA_DIR"
+
+    subash mount -t ecryptfs \
+        -o verbose,ecryptfs_sig=$data_sig,ecryptfs_fnek_sig=$data_sig,ecryptfs_cipher=aes,ecryptfs_key_bytes=32,ecryptfs_unlink_sigs,no_sig_cache,ecryptfs_enable_filename_crypto=y,ecryptfs_passthrough=n \
+         "$ENCRYPTED_DIR" "$DATA_DIR"
+}
+
+umount_encrypted_dir() {
+    is_mounted || return 0
+
+    "$PSPAWN_DIR/pspawn" stop || true
+    subash fuser -mk "$DATA_DIR" || true
+    subash umount -f "$DATA_DIR"
+}
+
+create_encrypted_dir() {
+    check_setup && return 1
+    test -e "$DATA_DIR" || fail Data directory already exists
+
+    stty -echo; printf "Passphrase: " 1>&2; read PASSWORD; stty echo
+    printf "%s" "'$PASSWORD'" | ecryptfs-add-passphrase | \
+    perl -n -e'/\[([^]]+)\]/ && print "$1\n"' | tee "${SIGNATURES_FILE}~"
+    mv -f "${SIGNATURES_FILE}~" "${SIGNATURES_FILE}"
+
+    mkdir -p "$ENCRYPTED_DIR"
+}
+
+cmd="$1"
+shift
+
+set -e
+
+case "$cmd" in
+    create)
+        create_encrypted_dir
+        ;;
+    mount)
+        mount_encrypted_dir
+        ;;
+    umount)
+        umount_encrypted_dir
+        ;;
+    start)
+        mount_encrypted_dir || fail
+        "$PSPAWN_DIR/pspawn" start "$@"
+        ;;
+    stop)
+        "$PSPAWN_DIR/pspawn" stop "$@"
+        umount_encrypted_dir
+        ;;
+    p)
+        mount_encrypted_dir || fail
+        "$PSPAWN_DIR/pspawn" "$@"
+        umount_encrypted_dir
+        ;;
+    x)
+        mount_encrypted_dir || fail
+        trap umount_encrypted_dir EXIT
+        "$PSPAWN_DIR/xspawn" "$@"
+        ;;
+    exec)
+        mount_encrypted_dir || fail
+        "$@"
+        umount_encrypted_dir
+        ;;
+    *)
+        fail "$cmd: illegal command"
+        ;;
+esac

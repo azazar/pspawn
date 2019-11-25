@@ -1,3 +1,5 @@
-/pspawn-lxc
 /xspawn.fstab
 /xspawn.lxc.conf
+/pspawn_ecryptfs_signatures
+/pspawn_encrypted_data
+/pspawn_data

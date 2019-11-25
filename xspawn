@@ -32,7 +32,7 @@ if [ -z "$XSPAWN_X_SERVER_COMMAND" ]; then
     XSPAWN_X_SERVER_COMMAND="/usr/bin/Xephyr :2001 -resizeable"
 fi
 
-set -ex
+set -e
 
 fail() {
     echo "$@" >&2
