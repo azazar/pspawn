@@ -10,7 +10,7 @@ PSpawn depends only on LXC 1.0, while XSpawn also depends on X.Org Server. It wa
 
 Since it's a LXC wrapper it wraps all `lxc-*` commands. For example `./pspawn start` actually executes `lxc-start -P $PSPAWN_DIR -n pspawn-lxc`.
 
-Use following commands to create and start your first PSpawn container X session:
+Use following commands to create your first PSpawn container and start X session:
 
     $ git clone https://github.com/azazar/pspawn
     $ cd pspawn
