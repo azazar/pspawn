@@ -1,6 +1,6 @@
 # PSpawn/XSpawn
 
-PSpawn is a simple LXC wrapper that allows me to have thumb drive with a single LXC container anywhere, where I have a linux machine with LXC 1.0 installed. It uses it's own directory to store LXC container. XSpawn wraps both PSpawn and X.Org Server, which allows me to use my own portable X environment.
+PSpawn is a simple LXC wrapper that allows me to have a thumb drive with a single LXC container anywhere, where I have a linux machine with LXC 1.0 installed. It uses it's own directory to store LXC container. XSpawn wraps both PSpawn and X.Org Server, which allows me to use my own portable X environment on any linux PC with sudo privileges or Xephyr installed.
 
 ## Dependencies
 
@@ -54,7 +54,7 @@ Start LXC Container in privileged mode
 
 There is also a Midnight Commander local menu file, that contains most used shortcuts.
 
-### Default Configuration Environment Variables Values
+### Configuration Environment Variables Values
 
 #### PSPawn
 
@@ -71,3 +71,6 @@ Those values are read from `xspawn.conf` if the file is available in PSpawn dire
 
     XSPAWN_INSTALL_SCRIPT="usermod -a -G sudo ubuntu; which startxfce4 || (apt-get -y update && apt-get -y install xfce4)"
     XSPAWN_XSESSION_SCRIPT="sudo -u ubuntu -i xfce4-session"
+    XSPAWN_X_SERVER_PRIVILEGED="$(groups `id -un` | grep -q '[ ^]sudo[ $]' && echo y || echo n)"
+    XSPAWN_X_SERVER_COMMAND="/usr/bin/Xephyr :2001 -resizeable"
+    XSPAWN_X_SERVER_COMMAND_PRIVILEGED="/usr/bin/Xorg :2001 vt12 -logfile /dev/null"

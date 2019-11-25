@@ -24,6 +24,14 @@ if [ -z "$XSPAWN_XSESSION_SCRIPT" ]; then
     XSPAWN_XSESSION_SCRIPT="sudo -u ubuntu -i xfce4-session"
 fi
 
+if [ -z "$XSPAWN_X_SERVER_COMMAND_PRIVILEGED" ]; then
+    XSPAWN_X_SERVER_COMMAND_PRIVILEGED="/usr/bin/Xorg :2001 vt12 -logfile /dev/null"
+fi
+
+if [ -z "$XSPAWN_X_SERVER_COMMAND" ]; then
+    XSPAWN_X_SERVER_COMMAND="/usr/bin/Xephyr :2001 -resizeable"
+fi
+
 set -ex
 
 fail() {
@@ -120,5 +128,8 @@ client="$tmpdir/xsession"
 echo "$PSPAWN_DIR/pspawn attach --keep-var=DISPLAY -- $XSPAWN_XSESSION_SCRIPT" > "$client"
 chmod +x "$client"
 
-#xinit "$client" -- /usr/bin/Xephyr :2001 ; reset
-subash xinit "$client" -- /usr/bin/Xorg :2001 vt12 -logfile "$rootfs/var/log/Xorg.log" < /dev/null 2>&1 | cat
+if [ "$XSPAWN_X_SERVER_PRIVILEGED" = "y" ]; then
+    subash xinit "$client" -- $XSPAWN_X_SERVER_COMMAND_PRIVILEGED < /dev/null 2>&1 | cat
+else
+    xinit "$client" -- $XSPAWN_X_SERVER_COMMAND < /dev/null 2>&1 | cat
+fi
