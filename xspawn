@@ -63,10 +63,16 @@ rootfs=`$PSPAWN_DIR/pspawn root`
 
 echo '# Do not modify' > $fstab
 echo '/tmp/.X11-unix tmp/.X11-unix none bind,create=dir 0 0' >> $fstab
-echo '/dev/snd dev/snd none bind,optional,create=dir 0 0' >> $fstab
+
+if [ "$PSPAWN_PRIVILEGED" = "y" ]; then
+    echo '/dev/snd dev/snd none bind,optional,create=dir 0 0' >> $fstab
+fi
 
 echo '# Do not modify' > $lxc_conf
-#echo 'lxc.cgroup.devices.allow = c 116:* rwm' >> $lxc_conf
+
+if [ "$PSPAWN_PRIVILEGED" = "y" ]; then
+    echo 'lxc.cgroup.devices.allow = c 116:* rwm' >> $lxc_conf
+fi
 
 export PSPAWN_LXC_START_ARGS_EXTRA="-s lxc.mount.fstab=$fstab -s lxc.include=$lxc_conf $PSPAWN_LXC_START_ARGS_EXTRA"
 
