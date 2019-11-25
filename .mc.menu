@@ -2,15 +2,15 @@ q       Run Midnight Commander in Container
 	x-terminal-emulator -e './pspawn execute -- env TERM=xterm mc' < /dev/null &> /dev/null &
 
 s       Start Container
-	./pspawn start
+	./pspawn start -o /dev/stdout -l INFO -s "lxc.mount.fstab = `pwd`/xspawn.fstab" -s "lxc.include = `pwd`/xspawn.lxc.conf"
 
 d       Stop Container
 	./pspawn stop
 
-        Create Container
+C       Create Container
 	./pspawn create
 
-        Destroy Container
+D       Destroy Container
 	./pspawn destroy -f
 
 z       Start Bash in Running Container

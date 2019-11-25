@@ -12,8 +12,6 @@ if [ -z "$PSPAWN_DIR" ]; then
     PSPAWN_DIR=$(dirname `realpath $0`)
 fi
 
-set -e
-
 fail() {
     echo "$@" >&2
     exit 1
@@ -23,7 +21,7 @@ fail() {
 subash() {
     wd=${PSPAWN_DIR}
     cd "$HOME"
-    echo "set -e ; cd $wd ;" "$@ < `tty`" | sudo /bin/bash
+    echo "set -e ; cd $wd ;" "$@" "< `tty`" | sudo /bin/bash
     cd "$wd"
 }
 
@@ -38,7 +36,9 @@ lxccmd() {
     return $?
 }
 
-PSPAWN_LXC_START_ARGS="-s lxc.rootfs.path=${PSPAWN_DIR}/$PSPAWN_LXC_NAME/rootfs $PSPAWN_LXC_START_ARGS_EXTRA"
+ROOTFS=${PSPAWN_DIR}/$PSPAWN_LXC_NAME/rootfs
+
+PSPAWN_LXC_START_ARGS="-s lxc.rootfs.path=$ROOTFS"
 
 test -z "$1" && fail command required
 
@@ -52,12 +52,20 @@ case "$cmd" in
             -n $PSPAWN_LXC_NAME \
             -t download \
             -- -d ubuntu -r bionic -a amd64
+        lxccmd execute -n $PSPAWN_LXC_NAME /usr/bin/passwd ubuntu
         ;;
-    start)
+    start|execute)
         lxccmd start \
             -n $PSPAWN_LXC_NAME \
             $PSPAWN_LXC_START_ARGS \
+            $PSPAWN_LXC_START_ARGS_EXTRA \
             "$@"
+        ;;
+    conf)
+        echo "$PSPAWN_DIR/$PSPAWN_LXC_NAME/config"
+        ;;
+    root)
+        echo "$ROOTFS"
         ;;
     ls)
         lxccmd ls "$@"
