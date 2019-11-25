@@ -1,3 +1,6 @@
+x       Launch XSpawn in Background
+        nohup ./xspawn < /dev/null &> /dev/null &
+
 q       Run Midnight Commander in Container
 	x-terminal-emulator -e './pspawn execute -- env TERM=xterm mc' < /dev/null &> /dev/null &
 
