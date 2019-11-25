@@ -4,11 +4,18 @@ PSpawn is a simple LXC wrapper that allows me to have a thumb drive with a singl
 
 ## Dependencies
 
-PSpawn depends only on LXC 1.0, while XSpawn also depends on X.Org Server.
+PSpawn depends only on LXC 1.0, while XSpawn also depends on X.Org Server. It was tested only on Ubuntu 18.04.3, but I expect it to work anywhere, where sudo and LXC are available.
 
 ## Usage
 
 Since it's a LXC wrapper it wraps all `lxc-*` commands. For example `./pspawn start` actually executes `lxc-start -P $PSPAWN_DIR -n pspawn-lxc`.
+
+Use following commands to create and start your first PSpawn container X session:
+
+    $ git clone https://github.com/azazar/pspawn
+    $ cd pspawn
+    $ ./pspawn create
+    $ ./xspawn
 
 ### Examples
 
