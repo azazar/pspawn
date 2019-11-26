@@ -57,11 +57,16 @@ mount_encrypted_dir() {
     check_setup || fail "No encrypted container available"
 
     data_sig=`sed '1q;d' "${SIGNATURES_FILE}"`
+    fnek_sig=`sed '2q;d' "${SIGNATURES_FILE}"`
 
     test -e "$DATA_DIR" || mkdir -p "$DATA_DIR"
 
-    subash mount -t ecryptfs \
-        -o verbose,ecryptfs_sig=$data_sig,ecryptfs_fnek_sig=$data_sig,ecryptfs_cipher=aes,ecryptfs_key_bytes=32,ecryptfs_unlink_sigs,no_sig_cache,ecryptfs_enable_filename_crypto=y,ecryptfs_passthrough=n \
+    if ! subash keyctl show | grep -q "$data_sig" || ! subash keyctl show | grep -q "$fnek_sig"; then
+        subash ecryptfs-add-passphrase --fnek
+    fi
+
+    subash mount -i -t ecryptfs \
+        -o verbose,ecryptfs_sig=$data_sig,ecryptfs_fnek_sig=$fnek_sig,ecryptfs_cipher=aes,ecryptfs_key_bytes=32,ecryptfs_unlink_sigs,no_sig_cache,ecryptfs_enable_filename_crypto=y,ecryptfs_passthrough=n \
          "$ENCRYPTED_DIR" "$DATA_DIR"
 }
 
@@ -75,10 +80,10 @@ umount_encrypted_dir() {
 
 create_encrypted_dir() {
     check_setup && return 1
-    test -e "$DATA_DIR" || fail Data directory already exists
+    test -e "$DATA_DIR" && fail Data directory already exists
 
     stty -echo; printf "Passphrase: " 1>&2; read PASSWORD; stty echo
-    printf "%s" "'$PASSWORD'" | ecryptfs-add-passphrase | \
+    echo "$PASSWORD" | ecryptfs-add-passphrase --fnek | \
     perl -n -e'/\[([^]]+)\]/ && print "$1\n"' | tee "${SIGNATURES_FILE}~"
     mv -f "${SIGNATURES_FILE}~" "${SIGNATURES_FILE}"
 
