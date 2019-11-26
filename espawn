@@ -114,14 +114,22 @@ case "$cmd" in
         umount_encrypted_dir
         ;;
     p)
-        mount_encrypted_dir || fail
-        "$PSPAWN_DIR/pspawn" "$@"
-        umount_encrypted_dir
+        if is_mounted; then
+            "$PSPAWN_DIR/pspawn" "$@"
+        else
+            mount_encrypted_dir || fail
+            "$PSPAWN_DIR/pspawn" "$@"
+            umount_encrypted_dir
+        fi
         ;;
     x)
-        mount_encrypted_dir || fail
-        trap umount_encrypted_dir EXIT
-        "$PSPAWN_DIR/xspawn" "$@"
+        if is_mounted; then
+            "$PSPAWN_DIR/xspawn" "$@"
+        else
+            mount_encrypted_dir || fail
+            trap umount_encrypted_dir EXIT
+            "$PSPAWN_DIR/xspawn" "$@"
+        fi
         ;;
     exec)
         mount_encrypted_dir || fail
