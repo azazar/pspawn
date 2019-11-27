@@ -1,5 +1,15 @@
 #!/bin/bash
 
+if [ -z "$PSPAWN_DIR" ]; then
+    PSPAWN_DIR=$(dirname `realpath $0`)
+fi
+
+conf="$PSPAWN_DIR/pspawn_data/pspawn.conf"
+
+if [ -e "$conf" ]; then
+    source "$conf"
+fi
+
 if [ -z "$PSPAWN_PRIVILEGED" ]; then
     PSPAWN_PRIVILEGED=n
 fi
@@ -23,7 +33,12 @@ fail() {
 subash() {
     wd=${PSPAWN_DIR}
     cd "$HOME"
-    echo "set -e ; cd $wd ;" "$@" "< `tty`" | sudo /bin/bash
+    if tty > /dev/null; then
+        stdin=`tty`
+    else
+        stdin='/dev/null'
+    fi
+    echo "set -e ; cd $wd ;" "$@" "< $stdin" | sudo /bin/bash
     cd "$wd"
 }
 
@@ -69,6 +84,9 @@ case "$cmd" in
         ;;
     root)
         echo "$ROOTFS"
+        ;;
+    chroot)
+        subash chroot "$ROOTFS" "$@"
         ;;
     ls)
         lxccmd ls "$@"

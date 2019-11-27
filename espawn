@@ -4,7 +4,7 @@ if [ -z "$PSPAWN_DIR" ]; then
     PSPAWN_DIR=$(dirname `realpath $0`)
 fi
 
-conf="$PSPAWN_DIR/pspawn.conf"
+conf="$PSPAWN_DIR/pspawn_data/pspawn.conf"
 
 if [ -e "$conf" ]; then
     source "$conf"
@@ -25,15 +25,6 @@ subash() {
     cd "$HOME"
     echo "set -e ; cd $wd ;" "$@" "< `tty`" | sudo /bin/bash
     cd "$wd"
-}
-
-gitinst() {
-    cmd=$1
-    url=$2
-    path="$HOME/.local/bin/$cmd"
-    test -e "$path" && return 0
-    wget "$url" -O "$path" || return 1
-    chmod +x "$path"
 }
 
 set -e
@@ -61,11 +52,11 @@ mount_encrypted_dir() {
 
     test -e "$DATA_DIR" || mkdir -p "$DATA_DIR"
 
-    if ! subash keyctl show | grep -q "$data_sig" || ! subash keyctl show | grep -q "$fnek_sig"; then
+    #if ! subash keyctl show | grep -q "$data_sig" || ! subash keyctl show | grep -q "$fnek_sig"; then
         subash ecryptfs-add-passphrase --fnek
-    fi
+    #fi
 
-    subash mount -i -t ecryptfs \
+    subash mount -t ecryptfs \
         -o verbose,ecryptfs_sig=$data_sig,ecryptfs_fnek_sig=$fnek_sig,ecryptfs_cipher=aes,ecryptfs_key_bytes=32,ecryptfs_unlink_sigs,no_sig_cache,ecryptfs_enable_filename_crypto=y,ecryptfs_passthrough=n \
          "$ENCRYPTED_DIR" "$DATA_DIR"
 }

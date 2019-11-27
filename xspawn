@@ -4,13 +4,13 @@ if [ -z "$PSPAWN_DIR" ]; then
     PSPAWN_DIR=$(dirname `realpath $0`)
 fi
 
-conf="$PSPAWN_DIR/pspawn.conf"
+conf="$PSPAWN_DIR/pspawn_data/pspawn.conf"
 
 if [ -e "$conf" ]; then
     source "$conf"
 fi
 
-confx="$PSPAWN_DIR/xspawn.conf"
+confx="$PSPAWN_DIR/pspawn_data/xspawn.conf"
 
 if [ -e "$confx" ]; then
     source "$confx"
@@ -24,6 +24,10 @@ if [ -z "$XSPAWN_XSESSION_SCRIPT" ]; then
     XSPAWN_XSESSION_SCRIPT="sudo -u ubuntu -i xfce4-session"
 fi
 
+if [ -z "$XSPAWN_X_SERVER_PRIVILEGED" ]; then
+    XSPAWN_X_SERVER_PRIVILEGED="$(groups `id -un` | grep -q '[ ^]sudo[ $]' && echo y || echo n)"
+fi
+
 if [ -z "$XSPAWN_X_SERVER_COMMAND_PRIVILEGED" ]; then
     XSPAWN_X_SERVER_COMMAND_PRIVILEGED="/usr/bin/Xorg :2001 vt12 -logfile /dev/null"
 fi
@@ -31,6 +35,8 @@ fi
 if [ -z "$XSPAWN_X_SERVER_COMMAND" ]; then
     XSPAWN_X_SERVER_COMMAND="/usr/bin/Xephyr :2001 -resizeable"
 fi
+
+DATA_DIR="$PSPAWN_DIR/pspawn_data"
 
 set -e
 
@@ -64,19 +70,10 @@ rootfs=`$PSPAWN_DIR/pspawn root`
 echo '# Do not modify' > $fstab
 echo '/tmp/.X11-unix tmp/.X11-unix none bind,create=dir 0 0' >> $fstab
 
-if [ "$PSPAWN_PRIVILEGED" = "y" ]; then
-    echo '/dev/snd dev/snd none bind,optional,create=dir 0 0' >> $fstab
-fi
-
 echo '# Do not modify' > $lxc_conf
-
-if [ "$PSPAWN_PRIVILEGED" = "y" ]; then
-    echo 'lxc.cgroup.devices.allow = c 116:* rwm' >> $lxc_conf
-fi
 
 export PSPAWN_LXC_START_ARGS_EXTRA="-s lxc.mount.fstab=$fstab -s lxc.include=$lxc_conf $PSPAWN_LXC_START_ARGS_EXTRA"
 
-tmpdir="/tmp/`date +%s`"
 stop_lxc="n"
 
 do_cleanup() {
@@ -91,20 +88,11 @@ do_cleanup() {
             pspawn stop -k
         fi
     fi
-
-    if [ -e "$tmpdir" ]; then
-        if mountpoint "$tmpdir"; then
-            subash fuser -mk "$tmpdir"
-            subash umount -Rf "$tmpdir"
-        fi
-
-        rm -rf "$tmpdir"
-    fi
 }
 
 trap do_cleanup EXIT
 
-if ! pspawn attach true 2>/dev/null; then
+if ! test "$(pspawn info -sH)" = "RUNNING"; then
     echo LXC container is not running, starting it ...
 
     pspawn start || exit 1
@@ -114,24 +102,20 @@ if ! pspawn attach true 2>/dev/null; then
     pspawn wait -s RUNNING -t 30 || fail It\'s not yet running
 fi
 
+test "$(pspawn info -sH)" = "RUNNING" || fail Container is not running
+
 lxc_br_ip=$(ip -f inet -o addr show lxcbr0|cut -d\  -f 7 | cut -d/ -f 1)
 
-timeout 30 $PSPAWN_DIR/pspawn attach -- bash -c 'while ! ping -c 1 -W 1 '${lxc_br_ip}'; do sleep 1; done' &> /dev/null || fail container was unable to connect to internet
+timeout 30 $PSPAWN_DIR/pspawn attach -- bash -c 'while ! ping -c 1 -W 1 '${lxc_br_ip}'; do sleep 1; done' &> /dev/null || fail container was unable to configure networking
 
 if [ ! -z "$XSPAWN_INSTALL_SCRIPT" ]; then
     echo checking xfce4 installation
     echo "$XSPAWN_INSTALL_SCRIPT" | pspawn attach -- /bin/bash
 fi
 
-mkdir -p "$tmpdir"
+client="$DATA_DIR/xsession"
 
-echo mounting ramfs ...
-subash mount -t ramfs none "$tmpdir"
-subash chmod 01777 "$tmpdir"
-
-client="$tmpdir/xsession"
-
-echo "$PSPAWN_DIR/pspawn attach --keep-var=DISPLAY -- $XSPAWN_XSESSION_SCRIPT" > "$client"
+echo "echo Starting X session \$(pwd) ... ; $PSPAWN_DIR/pspawn attach --keep-var=DISPLAY -- $XSPAWN_XSESSION_SCRIPT ; echo X Session finished" > "$client"
 chmod +x "$client"
 
 if [ "$XSPAWN_X_SERVER_PRIVILEGED" = "y" ]; then

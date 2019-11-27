@@ -1,4 +1,7 @@
-x       Launch XSpawn in Background
+X       Launch XSpawn
+        ./xspawn
+
+B       Launch XSpawn in Background
         nohup ./xspawn < /dev/null &> /dev/null &
 
 x       Launch bash in priveleged container
@@ -8,7 +11,7 @@ q       Run Midnight Commander in Container
 	x-terminal-emulator -e './pspawn execute -- env TERM=xterm mc' < /dev/null &> /dev/null &
 
 s       Start Container
-	./pspawn start -o /dev/stdout -l INFO -s "lxc.mount.fstab = `pwd`/xspawn.fstab" -s "lxc.include = `pwd`/xspawn.lxc.conf"
+	./pspawn start -o /dev/stdout -l INFO -s "lxc.mount.fstab=`pwd`/xspawn.fstab" -s "lxc.include=`pwd`/xspawn.lxc.conf"
 
 d       Stop Container
 	./pspawn stop
@@ -20,7 +23,7 @@ D       Destroy Container
 	./pspawn destroy -f
 
 z       Start Bash in Running Container
-	./pspawn attach
+	x-terminal-emulator -e './pspawn attach' < /dev/null &> /dev/null &
 
 a       Start Midnight Commander in Running Container
 	x-terminal-emulator -e './pspawn attach --keep-var TERM -- mc' < /dev/null &> /dev/null &
