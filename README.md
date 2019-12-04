@@ -80,7 +80,7 @@ There is also a Midnight Commander local menu file, that contains most used shor
 
 #### PSPawn
 
-Those values are read from `pspawn.conf` if the file is available in PSpawn directory.
+Those values are read from `pspawn.conf` if the file is available in `pspawn_data` directory.
 
     PSPAWN_PRIVILEGED="n"
     PSPAWN_LXC_NAME="pspawn-lxc"
@@ -89,10 +89,10 @@ Those values are read from `pspawn.conf` if the file is available in PSpawn dire
 
 #### XSpawn
 
-Those values are read from `xspawn.conf` if the file is available in PSpawn directory.
+Those values are read from `xspawn.conf` if the file is available in `pspawn_data` directory.
 
     XSPAWN_INSTALL_SCRIPT="usermod -a -G sudo ubuntu; which startxfce4 || (apt-get -y update && apt-get -y install xfce4)"
     XSPAWN_XSESSION_SCRIPT="sudo -u ubuntu -i xfce4-session"
-    XSPAWN_X_SERVER_PRIVILEGED="$(groups `id -un` | grep -q '[ ^]sudo[ $]' && echo y || echo n)"
+    XSPAWN_X_SERVER_PRIVILEGED="$(groups `id -un` | grep -q '[ ^]sudo[ $]' || test "$UID" = "0" && echo y || echo n)"
     XSPAWN_X_SERVER_COMMAND="/usr/bin/Xephyr :2001 -resizeable"
     XSPAWN_X_SERVER_COMMAND_PRIVILEGED="/usr/bin/Xorg :2001 vt12 -logfile /dev/null"
