@@ -10,7 +10,7 @@ if [ -e "$conf" ]; then
     source "$conf"
 fi
 
-DATA_DIR="$PSPAWN_DIR/pspawn_data"
+MOUNTPOINT="$PSPAWN_DIR/pspawn_data"
 ENCRYPTED_DIR="$PSPAWN_DIR/pspawn_encrypted_data"
 SIGNATURES_FILE="$PSPAWN_DIR/pspawn_ecryptfs_signatures"
 
@@ -30,7 +30,7 @@ subash() {
 set -e
 
 is_mounted() {
-    mountpoint -q "$DATA_DIR" && return 0
+    mountpoint -q "$MOUNTPOINT" && return 0
     return 1
 }
 
@@ -50,7 +50,7 @@ mount_encrypted_dir() {
     data_sig=`sed '1q;d' "${SIGNATURES_FILE}"`
     fnek_sig=`sed '2q;d' "${SIGNATURES_FILE}"`
 
-    test -e "$DATA_DIR" || mkdir -p "$DATA_DIR"
+    test -e "$MOUNTPOINT" || mkdir -p "$MOUNTPOINT"
 
     #if ! subash keyctl show | grep -q "$data_sig" || ! subash keyctl show | grep -q "$fnek_sig"; then
         subash ecryptfs-add-passphrase --fnek
@@ -58,20 +58,20 @@ mount_encrypted_dir() {
 
     subash mount -t ecryptfs \
         -o verbose,ecryptfs_sig=$data_sig,ecryptfs_fnek_sig=$fnek_sig,ecryptfs_cipher=aes,ecryptfs_key_bytes=32,ecryptfs_unlink_sigs,no_sig_cache,ecryptfs_enable_filename_crypto=y,ecryptfs_passthrough=n \
-         "$ENCRYPTED_DIR" "$DATA_DIR"
+         "$ENCRYPTED_DIR" "$MOUNTPOINT"
 }
 
 umount_encrypted_dir() {
     is_mounted || return 0
 
     "$PSPAWN_DIR/pspawn" stop || true
-    subash fuser -mk "$DATA_DIR" || true
-    subash umount -f "$DATA_DIR"
+    subash fuser -mk "$MOUNTPOINT" || true
+    subash umount -f "$MOUNTPOINT"
 }
 
 create_encrypted_dir() {
     check_setup && return 1
-    test -e "$DATA_DIR" && fail Data directory already exists
+    test -e "$MOUNTPOINT" && fail Data directory already exists
 
     stty -echo; printf "Passphrase: " 1>&2; read PASSWORD; stty echo
     echo "$PASSWORD" | ecryptfs-add-passphrase --fnek | \
