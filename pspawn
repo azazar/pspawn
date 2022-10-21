@@ -1,5 +1,11 @@
 #!/bin/bash
 
+conf="$(dirname `realpath $0`)/pspawn.conf"
+
+if [ -e "$conf" ]; then
+    source "$conf"
+fi
+
 if [ -z "$PSPAWN_DIR" ]; then
     PSPAWN_DIR=$(dirname `realpath $0`)
 fi
