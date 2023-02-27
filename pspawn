@@ -59,6 +59,30 @@ lxccmd() {
     return $?
 }
 
+chrootcmd() {
+    if test "$PSPAWN_PRIVILEGED" = "y"; then
+        subash chroot "$ROOTFS" "$@"
+    else
+        chroot "$ROOTFS" "$@"
+    fi
+    return $?
+}
+
+execcmd() {
+    pid=$(lxccmd info -n $PSPAWN_LXC_NAME -H|grep 'PID:'|tr -s ' '|cut -d' ' -f2)
+
+    if [ "x$pid" = "x" ]; then
+        fail "Container isn't running"
+    fi
+
+    if test "$PSPAWN_PRIVILEGED" = "y"; then
+        subash nsenter -a -Z -t $pid "$@"
+    else
+        nsenter -a -Z -t $pid "$@"
+    fi
+    return $?
+}
+
 ROOTFS=${PSPAWN_LXC_DIR}/$PSPAWN_LXC_NAME/rootfs
 
 PSPAWN_LXC_START_ARGS="-s lxc.rootfs.path=$ROOTFS"
@@ -75,15 +99,21 @@ case "$cmd" in
             -B dir \
             -n $PSPAWN_LXC_NAME \
             -t download \
-            -- -d ubuntu -r bionic -a amd64
-        lxccmd execute -n $PSPAWN_LXC_NAME /usr/bin/passwd ubuntu
+            -- -d ubuntu -a amd64
+        chrootcmd /usr/bin/passwd ubuntu
         ;;
-    start|execute)
-        lxccmd start \
+    start)
+        lxccmd "$cmd" \
             -n $PSPAWN_LXC_NAME \
             $PSPAWN_LXC_START_ARGS \
             $PSPAWN_LXC_START_ARGS_EXTRA \
             "$@"
+        ;;
+    execute)
+        execcmd "$@"
+        ;;
+    enter)
+        execcmd /bin/bash -l
         ;;
     conf)
         echo "$PSPAWN_LXC_DIR/$PSPAWN_LXC_NAME/config"
@@ -92,7 +122,7 @@ case "$cmd" in
         echo "$ROOTFS"
         ;;
     chroot)
-        subash chroot "$ROOTFS" "$@"
+        chrootcmd "$@"
         ;;
     ls)
         lxccmd ls "$@"
