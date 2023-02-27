@@ -92,7 +92,7 @@ do_cleanup() {
 
 trap do_cleanup EXIT
 
-if ! test "$(pspawn info -sH)" = "RUNNING"; then
+if ! test "$($PSPAWN_DIR/pspawn info -sH)" = "RUNNING"; then
     echo LXC container is not running, starting it ...
 
     pspawn start || exit 1
@@ -102,7 +102,7 @@ if ! test "$(pspawn info -sH)" = "RUNNING"; then
     pspawn wait -s RUNNING -t 30 || fail It\'s not yet running
 fi
 
-test "$(pspawn info -sH)" = "RUNNING" || fail Container is not running
+test "$($PSPAWN_DIR/pspawn info -sH)" = "RUNNING" || fail Container is not running
 
 lxc_br_ip=$(ip -f inet -o addr show lxcbr0|cut -d\  -f 7 | cut -d/ -f 1)
 
