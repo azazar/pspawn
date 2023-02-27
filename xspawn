@@ -104,7 +104,7 @@ fi
 
 test "$($PSPAWN_DIR/pspawn info -sH)" = "RUNNING" || fail Container is not running
 
-lxc_br_ip=$(ip -f inet -o addr show lxcbr0|cut -d\  -f 7 | cut -d/ -f 1)
+lxc_br_ip=$(ip -f inet -o addr show lxcbr0|tr -s ' '|cut -d' ' -f 4|cut -d'/' -f1)
 
 timeout 30 $PSPAWN_DIR/pspawn attach -- bash -c 'while ! ping -c 1 -W 1 '${lxc_br_ip}'; do sleep 1; done' &> /dev/null || fail container was unable to configure networking
 
